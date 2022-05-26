@@ -453,6 +453,32 @@ PixelShader =
       vNormal = lerp( vNormal, vMudNormal, saturate( vMonsoonStrength * 2.0 ) );
       return vColor;
     }
+    
+    uint DistanceToBorder(float3 color, float2 pos, float dx, float dy, uint maxDistance, in sampler2D IndirectionMap, float2 IndirectionMapSize, in sampler2D ColorMap, float2 ColorMapSize) {
+      for (uint i = 1; i <= maxDistance; i++) {
+        float3 found = GetProvinceColorSampled(float2(pos.x + (i * dx), pos.y + (i * dy)), IndirectionMap, IndirectionMapSize, ColorMap, ColorMapSize, 0).rgb;
+        if (distance(color, found) > 0.1f) {
+          return i;
+        }
+      }
+      return 100;
+    }
+    
+    uint DistanceToAnyBorder(float3 color, float2 pos, float dx, uint maxDistance, in sampler2D IndirectionMap, float2 IndirectionMapSize, in sampler2D ColorMap, float2 ColorMapSize) {
+      float dy = dx * 2.75f;
+      float ddx = 0.70710678118654f * dx;
+      float ddy = 0.70710678118654f * dy;
+      uint d1 = DistanceToBorder(color, pos,   dx,    0, maxDistance, IndirectionMap, IndirectionMapSize, ColorMap, ColorMapSize);
+      uint d2 = DistanceToBorder(color, pos,  -dx,    0, maxDistance, IndirectionMap, IndirectionMapSize, ColorMap, ColorMapSize);
+      uint d3 = DistanceToBorder(color, pos,   0,    dy, maxDistance, IndirectionMap, IndirectionMapSize, ColorMap, ColorMapSize);
+      uint d4 = DistanceToBorder(color, pos,   0,   -dy, maxDistance, IndirectionMap, IndirectionMapSize, ColorMap, ColorMapSize);
+      uint d5 = DistanceToBorder(color, pos,  ddx,  ddy, maxDistance, IndirectionMap, IndirectionMapSize, ColorMap, ColorMapSize);
+      uint d6 = DistanceToBorder(color, pos,  ddx, -ddy, maxDistance, IndirectionMap, IndirectionMapSize, ColorMap, ColorMapSize);
+      uint d7 = DistanceToBorder(color, pos, -ddx,  ddy, maxDistance, IndirectionMap, IndirectionMapSize, ColorMap, ColorMapSize);
+      uint d8 = DistanceToBorder(color, pos, -ddx, -ddy, maxDistance, IndirectionMap, IndirectionMapSize, ColorMap, ColorMapSize);
+      uint minDist = min(d1, min(d2, min(d3, min(d4, min(d5, min(d6, min(d7, d8)))))));
+      return minDist;
+    }
 
     float4 main( VS_OUTPUT_TERRAIN Input ) : PDX_COLOR
     {
@@ -566,9 +592,28 @@ PixelShader =
     #endif
       {
         vTerrainDiffuseSample.rgb = GetOverlay( vTerrainDiffuseSample.rgb, TerrainColor, 0.5f );
-
-        float2 vBlend = float2( 0.4f, 0.45f );
-        vOut = ( dot( vTerrainDiffuseSample.rgb, GREYIFY ) * vBlend.x + vColorMapSample.rgb * vBlend.y );
+        float camera_distance_max = 900.0f;
+        float camera_distance = min( vCamPos.y, camera_distance_max );
+        float camera_distance_ratio = camera_distance / camera_distance_max;
+        
+        float2 color_bounds = float2( 0.1f, 0.5f);
+        float color_ratio = color_bounds.x + camera_distance_ratio * ( color_bounds.y - color_bounds.x );
+        color_ratio = clamp(color_ratio, color_bounds.x, color_bounds.y);
+        
+        float terrain_grey_value = dot( vTerrainDiffuseSample.rgb, GREYIFY );
+        float3 terrain_grey = float3( terrain_grey_value, terrain_grey_value, terrain_grey_value );
+        float3 terrain_color = lerp( vTerrainDiffuseSample.rgb, terrain_grey, color_ratio);
+        
+        vOut = lerp( terrain_color, vColorMapSample.rgb, color_ratio);
+        
+        uint maxDistance = 10;
+        float borderDistance = DistanceToAnyBorder(vColorMapSample.rgb, Input.uv, -0.000075f, maxDistance, IndirectionMap, ProvinceIndirectionMapSize, ProvinceColorMap, ProvinceColorMapSize);
+        if (borderDistance <= maxDistance) {
+          float borderRatio = borderDistance / maxDistance;
+          vOut = lerp(vColorMapSample.rgb * (1 - color_ratio), vOut, borderRatio);
+        }
+        
+        
         vOut = CalculateMapLighting( vOut, vHeightNormalSample );
         vOut = calculate_secondary( Input.uv, vOut, Input.prepos.xz );
       }
