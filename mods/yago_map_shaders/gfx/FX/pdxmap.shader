@@ -455,8 +455,9 @@ PixelShader =
     }
     
     uint DistanceToBorder(float3 color, float2 pos, float dx, float dy, uint maxDistance, in sampler2D IndirectionMap, float2 IndirectionMapSize, in sampler2D ColorMap, float2 ColorMapSize) {
+      float3 found;
       for (uint i = 1; i <= maxDistance; i++) {
-        float3 found = GetProvinceColorSampled(float2(pos.x + (i * dx), pos.y + (i * dy)), IndirectionMap, IndirectionMapSize, ColorMap, ColorMapSize, 0).rgb;
+        found = GetProvinceColorSampled(float2(pos.x + (i * dx), pos.y + (i * dy)), IndirectionMap, IndirectionMapSize, ColorMap, ColorMapSize, 0).rgb;
         if (distance(color, found) > 0.1f) {
           return i;
         }
@@ -465,7 +466,8 @@ PixelShader =
     }
     
     uint DistanceToAnyBorder(float3 color, float2 pos, float dx, uint maxDistance, in sampler2D IndirectionMap, float2 IndirectionMapSize, in sampler2D ColorMap, float2 ColorMapSize) {
-      float dy = dx * 2.75f;
+      float widthToHeightRatio = 2.75f;
+      float dy = dx * widthToHeightRatio;
       float ddx = 0.70710678118654f * dx;
       float ddy = 0.70710678118654f * dy;
       uint d1 = DistanceToBorder(color, pos,   dx,    0, maxDistance, IndirectionMap, IndirectionMapSize, ColorMap, ColorMapSize);
@@ -606,8 +608,9 @@ PixelShader =
         
         vOut = lerp( terrain_color, vColorMapSample.rgb, color_ratio);
         
-        uint maxDistance = 10;
-        float borderDistance = DistanceToAnyBorder(vColorMapSample.rgb, Input.uv, -0.000075f, maxDistance, IndirectionMap, ProvinceIndirectionMapSize, ProvinceColorMap, ProvinceColorMapSize);
+        uint maxDistance = 8;
+        float softBorderSize = 0.00075f;
+        float borderDistance = DistanceToAnyBorder(vColorMapSample.rgb, Input.uv, softBorderSize / maxDistance, maxDistance, IndirectionMap, ProvinceIndirectionMapSize, ProvinceColorMap, ProvinceColorMapSize);
         if (borderDistance <= maxDistance) {
           float borderRatio = borderDistance / maxDistance;
           vOut = lerp(vColorMapSample.rgb * (1 - color_ratio), vOut, borderRatio);
