@@ -352,7 +352,7 @@ PixelShader =
       float3 refractiveColor = tex2D( WaterRefraction, (refractiveUV.xy - normal.xz * vRefractionScale * 0.15f) ).rgb;
     #endif
 
-      float fresnelBias = 0.25f;
+      float fresnelBias = 0.65f;
       float fresnel = saturate( dot( -vEyeDir, normal ) ) * 0.5f;
       fresnel = saturate( fresnelBias + ( 1.0f - fresnelBias ) * pow( 1.0f - fresnel, 10.0f ) );
       fresnel *= (1.0f-vIceFade); //No fresnel when we have snow
@@ -467,7 +467,7 @@ PixelShader =
       float3 refractiveColor = tex2D( WaterRefraction, (refractiveUV.xy - normal.xz * vRefractionScale * 0.15f) ).rgb;
     #endif
 
-      float fresnelBias = 0.25f;
+      float fresnelBias = 0.65f;
       float fresnel = saturate( dot( -vEyeDir, normal ) ) * 0.5f;
       fresnel = saturate( fresnelBias + ( 1.0f - fresnelBias ) * pow( 1.0f - fresnel, 10.0f ) );
       fresnel *= (1.0f-vIceFade); //No fresnel when we have snow
