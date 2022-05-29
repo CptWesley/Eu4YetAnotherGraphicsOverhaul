@@ -607,6 +607,7 @@ PixelShader =
         float3 terrain_color = lerp( vTerrainDiffuseSample.rgb, terrain_grey, color_ratio);
         
         vOut = lerp( terrain_color, vColorMapSample.rgb, color_ratio);
+        vOut *= 0.95f;
         
         uint maxDistance = 8;
         float softBorderSize = 0.00075f;
