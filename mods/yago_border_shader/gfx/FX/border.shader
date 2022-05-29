@@ -178,6 +178,7 @@ PixelShader =
       clip( 0.99f - TI );
       float4 vColor = tex2D( BorderDiffuse, float2( Input.uv.y * BORDER_TILE, Input.uv.x ) );
       float4 vData = tex2D( BorderData, float2( Input.uv.y * BORDER_TILE, Input.uv.x ) );
+      bool isNotCountryBorder = vData.r == vData.g && vData.r == vData.b;
       vColor.rgb += lerp( 
         vData.r * COLOR_TINT[0] + vData.g * COLOR_TINT[1] + vData.b * COLOR_TINT[2], 
         vData.r * COLOR_TINT[3] + vData.g * COLOR_TINT[4] + vData.b * COLOR_TINT[5], vData.a ).rgb;
@@ -195,7 +196,17 @@ PixelShader =
       vColor.rgb *=  fShadowTerm;
       vColor.rgb = ApplyDistanceFog( vColor.rgb, Input.pos ) * max( GetFoW( Input.pos, vFoWColor, FoWDiffuse ), vGlowFactor );
 
-      //return float4(1.0f, 0.0f, 0.0f ,1.0f);
+      if (isNotCountryBorder) {
+        float camera_distance_max = 700.0f;
+        float camera_distance_min = 100.0f;
+        float camera_distance = clamp(vCamPos.y - camera_distance_min, 0, camera_distance_max);
+        float camera_distance_ratio = camera_distance / (camera_distance_max - camera_distance_min);
+        
+        float2 color_bounds = float2( 0.1f, 1.0f);
+        float color_ratio = 1.0f - camera_distance_ratio;
+        vColor = float4(vColor.rgb, vColor.a * color_ratio);
+      }
+      
       return float4( ComposeSpecular( vColor.rgb, 0.0f ), max( vColor.a, vGlowFactor - 0.2f )*(1.0f - TI) );
     }
   ]]
