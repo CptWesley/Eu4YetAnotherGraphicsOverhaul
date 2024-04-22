@@ -464,6 +464,14 @@ PixelShader =
       }
       return 100;
     }
+
+    int MyMin(int a, int b) {
+      if (a < b) {
+        return a;
+      }
+
+      return b;
+    }
     
     int DistanceToAnyBorder(float3 color, float2 pos, float dx, int maxDistance, in sampler2D IndirectionMap, float2 IndirectionMapSize, in sampler2D ColorMap, float2 ColorMapSize) {
       float widthToHeightRatio = 2.75f;
@@ -472,7 +480,7 @@ PixelShader =
       int d2 = DistanceToBorder(color, pos,  -dx,    0, maxDistance, IndirectionMap, IndirectionMapSize, ColorMap, ColorMapSize);
       int d3 = DistanceToBorder(color, pos,   0,    dy, maxDistance, IndirectionMap, IndirectionMapSize, ColorMap, ColorMapSize);
       int d4 = DistanceToBorder(color, pos,   0,   -dy, maxDistance, IndirectionMap, IndirectionMapSize, ColorMap, ColorMapSize);
-      int minDist = min(d1, min(d2, min(d3, d4)));
+      int minDist = MyMin(d1, MyMin(d2, MyMin(d3, d4)));
       return minDist;
     }
 
