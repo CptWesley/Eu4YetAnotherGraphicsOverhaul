@@ -1,4 +1,4 @@
-name="Yet Another Graphics Overhaul: Map Shaders Lite (1.1)"
+name="Yet Another Graphics Overhaul: Map Shaders Lite (1.2)"
 picture="thumbnail.png"
 tags={
 	"Graphics"
